@@ -1,0 +1,203 @@
+<!-- Text to PDF with formatting controls -->
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Text to PDF Converter</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css"
+      rel="stylesheet"
+    />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/3.0.1/jspdf.umd.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+      body::before {
+        content: "";
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: linear-gradient(-45deg, #e0eafc, #cfdef3, #e0eafc, #cfdef3);
+        background-size: 400% 400%;
+        animation: gradientMotion 10s ease infinite;
+        z-index: -1;
+      }
+
+      @keyframes gradientMotion {
+        0% {
+          background-position: 0% 50%;
+        }
+        50% {
+          background-position: 100% 50%;
+        }
+        100% {
+          background-position: 0% 50%;
+        }
+      }
+    </style>
+  </head>
+  <body class="min-h-screen flex items-center justify-center bg-transparent p-4">
+    <div class="w-full max-w-3xl bg-white rounded-2xl shadow-xl p-8 space-y-6 animate-fadeIn">
+      <h1 class="text-3xl font-extrabold text-center">Text → PDF Converter</h1>
+
+      <!-- Formatting Options -->
+      <div class="flex flex-wrap gap-4 items-center justify-between">
+        <div class="flex gap-2 items-center">
+          <label class="font-semibold">Font Size:</label>
+          <select id="fontSize" class="border rounded px-2 py-1">
+            <option value="10">10</option>
+            <option value="12">12</option>
+            <option value="14">14</option>
+            <option value="16">16</option>
+            <option value="18">18</option>
+            <option value="20">20</option>
+            <option value="24">24</option>
+            <option value="28">28</option>
+            <option value="32">32</option>
+            <option value="36">36</option>
+            <option value="40">40</option>
+            <option value="48">48</option>
+            <option value="56">56</option>
+            <option value="64">64</option>
+          </select>
+        </div>
+
+        <div class="flex gap-2 items-center">
+          <button id="leftAlignBtn" title="Left Align" class="p-2 border rounded">⬅️</button>
+          <button id="centerAlignBtn" title="Center Align" class="p-2 border rounded">🔳</button>
+          <button id="rightAlignBtn" title="Right Align" class="p-2 border rounded">➡️</button>
+        </div>
+
+        <div class="flex gap-2 items-center">
+          <button id="boldBtn" class="px-3 py-1 border rounded font-bold">B</button>
+          <button id="italicBtn" class="px-3 py-1 border rounded italic">I</button>
+          <button id="underlineBtn" class="px-3 py-1 border rounded underline">U</button>
+          <button id="bulletBtn" class="px-3 py-1 border rounded">• List</button>
+        </div>
+      </div>
+
+      <!-- Textarea -->
+      <textarea
+        id="inputText"
+        placeholder="Type or paste any text here..."
+        class="w-full h-80 p-4 border border-gray-300 rounded-xl focus:ring focus:ring-indigo-300 focus:outline-none"
+        style="font-size: 12pt; font-family: Arial; font-weight: normal; font-style: normal; text-decoration: none; text-align: left;"
+      ></textarea>
+
+      <button
+        id="downloadBtn"
+        class="w-full py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold transition-colors"
+      >
+        Download PDF
+      </button>
+
+      <p class="text-sm text-gray-500 text-center">
+        Entirely client-side – no text ever leaves your browser ✨
+        created by - Tushar Shukla
+      </p>
+    </div>
+
+    <script>
+      const inputText = document.getElementById("inputText");
+      const fontSize = document.getElementById("fontSize");
+      const boldBtn = document.getElementById("boldBtn");
+      const italicBtn = document.getElementById("italicBtn");
+      const underlineBtn = document.getElementById("underlineBtn");
+      const bulletBtn = document.getElementById("bulletBtn");
+
+      const leftAlignBtn = document.getElementById("leftAlignBtn");
+      const centerAlignBtn = document.getElementById("centerAlignBtn");
+      const rightAlignBtn = document.getElementById("rightAlignBtn");
+
+      let currentAlignment = "left";
+
+      leftAlignBtn.onclick = () => {
+        currentAlignment = "left";
+        inputText.style.textAlign = "left";
+      };
+
+      centerAlignBtn.onclick = () => {
+        currentAlignment = "center";
+        inputText.style.textAlign = "center";
+      };
+
+      rightAlignBtn.onclick = () => {
+        currentAlignment = "right";
+        inputText.style.textAlign = "right";
+      };
+
+      let isBold = false;
+      let isItalic = false;
+      let isUnderline = false;
+
+      boldBtn.onclick = () => {
+        isBold = !isBold;
+        inputText.style.fontWeight = isBold ? "bold" : "normal";
+      };
+
+      italicBtn.onclick = () => {
+        isItalic = !isItalic;
+        inputText.style.fontStyle = isItalic ? "italic" : "normal";
+      };
+
+      underlineBtn.onclick = () => {
+        isUnderline = !isUnderline;
+        inputText.style.textDecoration = isUnderline ? "underline" : "none";
+      };
+
+      fontSize.onchange = () => {
+        inputText.style.fontSize = fontSize.value + "pt";
+      };
+
+      bulletBtn.onclick = () => {
+        inputText.value = inputText.value.split("\n").map(line => line.startsWith("• ") ? line : `• ${line}`).join("\n");
+      };
+
+      document.getElementById("downloadBtn").addEventListener("click", () => {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF({ unit: "pt", format: "a4", lineHeight: 1.5 });
+
+        const margin = 40;
+        const pageHeight = doc.internal.pageSize.getHeight();
+        const maxLineWidth = doc.internal.pageSize.getWidth() - margin * 2;
+
+        const rawText = inputText.value || " ";
+        const lines = doc.splitTextToSize(rawText, maxLineWidth);
+
+        let cursorY = margin;
+
+        doc.setFont("Helvetica", isBold ? "bold" : "normal");
+        doc.setFontSize(parseInt(fontSize.value));
+        doc.setTextColor("#000000");
+
+        lines.forEach((line) => {
+          if (cursorY > pageHeight - margin) {
+            doc.addPage();
+            cursorY = margin;
+          }
+
+          let x;
+          switch (currentAlignment) {
+            case "center":
+              x = doc.internal.pageSize.getWidth() / 2;
+              doc.text(line, x, cursorY, { align: "center" });
+              break;
+            case "right":
+              x = doc.internal.pageSize.getWidth() - margin;
+              doc.text(line, x, cursorY, { align: "right" });
+              break;
+            default:
+              x = margin;
+              doc.text(line, x, cursorY);
+          }
+
+          cursorY += parseInt(fontSize.value) * 1.5;
+        });
+
+        doc.save("text.pdf");
+      });
+    </script>
+  </body>
+</html>
